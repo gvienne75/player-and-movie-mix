@@ -531,6 +531,25 @@ function MixCard({
       {/* Holographic foil layer */}
       <div className="mix-holo" />
 
+      {/* Hover overlay — mix name + authors */}
+      <div className="mix-tile-ov absolute inset-0 z-[8] flex items-end" style={{ pointerEvents: "none" }}>
+        <div className="w-full" style={{ background: "linear-gradient(to top, rgba(0,0,0,.88) 0%, rgba(0,0,0,.5) 55%, transparent 100%)", padding: "36px 11px 11px" }}>
+          {title && (
+            <p style={{ fontFamily: "var(--font-display)", fontSize: "clamp(14px,1.6vw,18px)", lineHeight: 1.05, color: "#fff", letterSpacing: ".02em", marginBottom: 4, overflowWrap: "break-word" }}>
+              {title}
+            </p>
+          )}
+          {(mix.autor_mix || mix.autor_montage) && (
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 9.5, color: "rgba(255,255,255,.6)", letterSpacing: ".04em", lineHeight: 1.4 }}>
+              {[
+                mix.autor_mix ? `Mix : ${mix.autor_mix}` : null,
+                mix.autor_montage ? `Montage : ${mix.autor_montage}` : null,
+              ].filter(Boolean).join("  ·  ")}
+            </p>
+          )}
+        </div>
+      </div>
+
       {/* Card number — always visible, top-left */}
       <span
         className="absolute left-[10px] top-[10px] z-[9]"
