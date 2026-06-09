@@ -328,15 +328,6 @@ export default function HomePage() {
               onToggle={toggle}
             />
           ))}
-          {anyActive && (
-            <button
-              className="mix-facet"
-              style={{ background: "transparent", border: 0, color: "#9f988a", padding: "9px 6px" }}
-              onClick={clearAll}
-            >
-              clear all
-            </button>
-          )}
         </div>
 
         {/* Sort + Edit — right */}
@@ -360,10 +351,10 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Active chips */}
+      {/* Active chips + clear all */}
       {chips.length > 0 && (
         <div
-          className="flex justify-center flex-wrap"
+          className="flex items-center flex-wrap"
           style={{ gap: 7, padding: "4px clamp(20px,4vw,56px) 0" }}
         >
           {chips.map((c) => (
@@ -378,6 +369,21 @@ export default function HomePage() {
               </button>
             </span>
           ))}
+          <button
+            onClick={clearAll}
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              color: "#9f988a",
+              background: "transparent",
+              border: 0,
+              padding: "2px 4px",
+              cursor: "pointer",
+              letterSpacing: ".04em",
+            }}
+          >
+            clear all
+          </button>
         </div>
       )}
 
@@ -525,16 +531,17 @@ function MixCard({
       {/* Holographic foil layer */}
       <div className="mix-holo" />
 
-      {/* Card number — always visible */}
+      {/* Card number — always visible, top-left */}
       <span
-        className="absolute left-[10px] bottom-[10px] z-[9]"
+        className="absolute left-[10px] top-[10px] z-[9]"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 9,
-          letterSpacing: ".1em",
-          color: "rgba(255,255,255,.5)",
+          fontSize: 13,
+          letterSpacing: ".06em",
+          fontWeight: 600,
+          color: "rgba(255,255,255,.92)",
           lineHeight: 1,
-          textShadow: "0 1px 4px rgba(0,0,0,.7)",
+          textShadow: "0 1px 8px rgba(0,0,0,.9), 0 0 2px rgba(0,0,0,.8)",
         }}
       >
         {cardNum}
