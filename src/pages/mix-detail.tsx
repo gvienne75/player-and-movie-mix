@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { getMix, getAdjacentMixes } from "@/lib/mixes";
 import type { Mix } from "@/lib/types";
 
@@ -29,44 +29,88 @@ const ExternalIcon = () => (
   </svg>
 );
 
+function fmtDate(d: string | null) {
+  if (!d) return null;
+  try {
+    return new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  } catch {
+    return d;
+  }
+}
+
+function fmtDatetime(d: string | null) {
+  if (!d) return null;
+  try {
+    return new Date(d).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return d;
+  }
+}
+
 export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Filter-aware navigation: read filteredIds passed via router state
+  const filteredIds: string[] | null = (location.state as { filteredIds?: string[] } | null)?.filteredIds ?? null;
+  const currentIndex = filteredIds && id ? filteredIds.indexOf(id) : -1;
+  const prevId = filteredIds && currentIndex > 0 ? filteredIds[currentIndex - 1] : null;
+  const nextId = filteredIds && currentIndex !== -1 && currentIndex < filteredIds.length - 1 ? filteredIds[currentIndex + 1] : null;
+  const shouldFetchAdjacent = !filteredIds;
+
   const [mix, setMix] = useState<Mix | null>(null);
-  const [prev, setPrev] = useState<Mix | null>(null);
-  const [next, setNext] = useState<Mix | null>(null);
+  const [apiPrev, setApiPrev] = useState<Mix | null>(null);
+  const [apiNext, setApiNext] = useState<Mix | null>(null);
   const [loadedId, setLoadedId] = useState<string | null>(null);
 
   const loading = loadedId !== id;
 
+  const base = id ? getBase(id) : BASES[0];
+  const tintBg = `linear-gradient(155deg, color-mix(in srgb, ${base} 70%, #fff 14%), ${base} 62%, #0b0a07)`;
+
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
-    getMix(id).then(async (m) => {
+
+    async function load() {
+      const m = await getMix(id!);
       if (cancelled) return;
       setMix(m);
-      setPrev(null);
-      setNext(null);
-      if (m) {
+      setApiPrev(null);
+      setApiNext(null);
+      if (m && shouldFetchAdjacent) {
         const adj = await getAdjacentMixes(m);
         if (cancelled) return;
-        setPrev(adj.prev);
-        setNext(adj.next);
+        setApiPrev(adj.prev);
+        setApiNext(adj.next);
       }
-      setLoadedId(id);
-    });
+      setLoadedId(id!);
+    }
+
+    load();
     return () => { cancelled = true; };
-  }, [id]);
+  }, [id, shouldFetchAdjacent]);
+
+  const navState = useMemo(
+    () => modal ? { backgroundLocation: { pathname: "/" }, filteredIds } : { filteredIds },
+    [modal, filteredIds]
+  );
 
   const close = useCallback(() => navigate("/"), [navigate]);
 
   const goNext = useCallback(() => {
-    if (next) navigate(`/mix/${next.id}`, { state: modal ? { backgroundLocation: { pathname: "/" } } : undefined });
-  }, [next, navigate, modal]);
+    const targetId = nextId ?? apiNext?.id;
+    if (targetId) navigate(`/mix/${targetId}`, { state: navState });
+  }, [nextId, apiNext, navigate, navState]);
 
   const goPrev = useCallback(() => {
-    if (prev) navigate(`/mix/${prev.id}`, { state: modal ? { backgroundLocation: { pathname: "/" } } : undefined });
-  }, [prev, navigate, modal]);
+    const targetId = prevId ?? apiPrev?.id;
+    if (targetId) navigate(`/mix/${targetId}`, { state: navState });
+  }, [prevId, apiPrev, navigate, navState]);
+
+  const hasPrev = !!(prevId ?? apiPrev);
+  const hasNext = !!(nextId ?? apiNext);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -84,25 +128,25 @@ export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
     return () => { document.body.style.overflow = ""; };
   }, [modal]);
 
-  const base = mix ? getBase(mix.id) : BASES[0];
-  const tintBg = `linear-gradient(155deg, color-mix(in srgb, ${base} 70%, #fff 14%), ${base} 62%, #0b0a07)`;
   const thumbnail = mix ? (mix.image ?? mix.fb_image) : null;
-  const title = mix?.mix_name ?? [mix?.player, mix?.movie].filter(Boolean).join(" × ") ?? "";
+  const mixName = mix?.mix_name;
+  const playerMovie = [mix?.player, mix?.movie].filter(Boolean).join(" × ");
+  const title = mixName ?? playerMovie ?? "";
 
   const inner = (
     <div
-      className="lb-inner-anim relative z-10 flex items-center w-full"
-      style={{ maxWidth: 940, gap: "clamp(26px,4.5vw,58px)" }}
+      className="lb-inner-anim relative z-10 flex items-start w-full"
+      style={{ maxWidth: 1080, gap: "clamp(24px,4vw,56px)" }}
       key={id}
     >
-      {/* Poster card */}
+      {/* Poster */}
       <div
         className="relative flex-shrink-0 overflow-hidden isolate"
         style={{
-          width: "clamp(230px,32vw,360px)",
+          width: "clamp(280px,38vw,440px)",
           aspectRatio: "2/3",
           borderRadius: 16,
-          boxShadow: "0 40px 90px rgba(0,0,0,.62), 0 8px 24px rgba(0,0,0,.5)",
+          boxShadow: "0 40px 90px rgba(0,0,0,.65), 0 8px 24px rgba(0,0,0,.5)",
           background: tintBg,
         }}
       >
@@ -110,7 +154,7 @@ export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
           <img
             src={thumbnail}
             alt={title}
-            className="absolute inset-0 w-full h-full object-contain"
+            className="absolute inset-0 w-full h-full object-cover"
           />
         ) : (
           <div
@@ -135,17 +179,17 @@ export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
 
       {/* Info panel */}
       {loading ? (
-        <div className="flex-1" style={{ maxWidth: 540 }}>
+        <div className="flex-1 pt-2" style={{ maxWidth: 540 }}>
           <div style={{ height: 62, background: "rgba(255,255,255,.04)", borderRadius: 4, marginBottom: 16 }} />
           <div style={{ height: 200, background: "rgba(255,255,255,.04)", borderRadius: 4 }} />
         </div>
       ) : mix ? (
-        <div className="flex-1 min-w-0" style={{ maxWidth: 540 }}>
+        <div className="flex-1 min-w-0 pt-2" style={{ maxWidth: 540 }}>
           <h1
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: "clamp(40px,4.8vw,62px)",
-              lineHeight: 0.82,
+              fontSize: "clamp(38px,4.6vw,60px)",
+              lineHeight: 0.84,
               letterSpacing: ".012em",
               color: "#fff",
               margin: "0 0 4px",
@@ -157,22 +201,28 @@ export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
             {title}
           </h1>
 
+          {/* Subtitle: show player × movie below if mix_name is primary */}
+          {mixName && playerMovie && (
+            <p style={{ fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: 600, color: "#9f988a", margin: "8px 0 0", letterSpacing: ".01em" }}>
+              {playerMovie}
+            </p>
+          )}
+
           <div
             className="grid"
             style={{
               gridTemplateColumns: "auto 1fr",
               gap: "9px 18px",
-              marginTop: 26,
+              marginTop: 22,
               borderTop: "1px solid rgba(255,255,255,.08)",
-              paddingTop: 22,
+              paddingTop: 20,
             }}
           >
-            {mix.fb_publication_date && (
+            {/* All available database fields */}
+            {mix.mix_name && (
               <>
-                <MetaKey>Date</MetaKey>
-                <MetaVal mono>
-                  {new Date(mix.fb_publication_date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
-                </MetaVal>
+                <MetaKey>Mix Name</MetaKey>
+                <MetaVal>{mix.mix_name}</MetaVal>
               </>
             )}
             {mix.player && (
@@ -184,10 +234,13 @@ export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
             {mix.movie && (
               <>
                 <MetaKey>Movie</MetaKey>
-                <MetaVal>
-                  {mix.movie}
-                  {mix.movie_year ? ` (${mix.movie_year})` : ""}
-                </MetaVal>
+                <MetaVal>{mix.movie}{mix.movie_year ? ` (${mix.movie_year})` : ""}</MetaVal>
+              </>
+            )}
+            {mix.movie_year && !mix.movie && (
+              <>
+                <MetaKey>Movie Year</MetaKey>
+                <MetaVal mono>{mix.movie_year}</MetaVal>
               </>
             )}
             {mix.autor_mix && (
@@ -196,15 +249,27 @@ export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
                 <MetaVal>{mix.autor_mix}</MetaVal>
               </>
             )}
-            {mix.autor_montage && mix.autor_montage !== mix.autor_mix && (
+            {mix.autor_montage && (
               <>
-                <MetaKey>Montage Author</MetaKey>
+                <MetaKey>Montage</MetaKey>
                 <MetaVal>{mix.autor_montage}</MetaVal>
+              </>
+            )}
+            {mix.fb_publication_autor && (
+              <>
+                <MetaKey>Published By</MetaKey>
+                <MetaVal>{mix.fb_publication_autor}</MetaVal>
+              </>
+            )}
+            {mix.fb_publication_date && (
+              <>
+                <MetaKey>Published</MetaKey>
+                <MetaVal mono>{fmtDate(mix.fb_publication_date)}</MetaVal>
               </>
             )}
             {mix.fb_description && (
               <>
-                <MetaKey>Comment</MetaKey>
+                <MetaKey>Description</MetaKey>
                 <MetaVal dim>{mix.fb_description}</MetaVal>
               </>
             )}
@@ -223,6 +288,22 @@ export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
                 </MetaVal>
               </>
             )}
+            {mix.created_at && (
+              <>
+                <MetaKey>Added</MetaKey>
+                <MetaVal mono dim>{fmtDatetime(mix.created_at)}</MetaVal>
+              </>
+            )}
+            {mix.updated_at && mix.updated_at !== mix.created_at && (
+              <>
+                <MetaKey>Updated</MetaKey>
+                <MetaVal mono dim>{fmtDatetime(mix.updated_at)}</MetaVal>
+              </>
+            )}
+            <>
+              <MetaKey>ID</MetaKey>
+              <MetaVal mono dim>{mix.id}</MetaVal>
+            </>
           </div>
         </div>
       ) : null}
@@ -231,44 +312,46 @@ export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
 
   const chrome = (
     <>
-      {/* Close button */}
+      {/* Close */}
       <button
         onClick={close}
         aria-label="Close"
-        className="fixed z-[4] flex items-center justify-center transition-all duration-[160ms] group"
+        className="fixed z-[120] flex items-center justify-center"
         style={{
           top: "clamp(16px,3vw,28px)",
           right: "clamp(16px,3vw,28px)",
-          width: 42,
-          height: 42,
+          width: 42, height: 42,
           borderRadius: "50%",
           background: "rgba(255,255,255,.07)",
           border: "1px solid rgba(255,255,255,.08)",
           color: "#f4efe6",
           cursor: "pointer",
+          transition: "background .16s, border-color .16s, color .16s, transform .16s",
         }}
         onMouseEnter={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background = "#e0573f";
-          (e.currentTarget as HTMLButtonElement).style.borderColor = "#e0573f";
-          (e.currentTarget as HTMLButtonElement).style.color = "#15110f";
-          (e.currentTarget as HTMLButtonElement).style.transform = "rotate(90deg)";
+          const btn = e.currentTarget as HTMLButtonElement;
+          btn.style.background = "#e0573f";
+          btn.style.borderColor = "#e0573f";
+          btn.style.color = "#15110f";
+          btn.style.transform = "rotate(90deg)";
         }}
         onMouseLeave={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,.07)";
-          (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,.08)";
-          (e.currentTarget as HTMLButtonElement).style.color = "#f4efe6";
-          (e.currentTarget as HTMLButtonElement).style.transform = "";
+          const btn = e.currentTarget as HTMLButtonElement;
+          btn.style.background = "rgba(255,255,255,.07)";
+          btn.style.borderColor = "rgba(255,255,255,.08)";
+          btn.style.color = "#f4efe6";
+          btn.style.transform = "";
         }}
       >
         <CloseIcon />
       </button>
 
-      {/* Prev */}
-      {prev && (
+      {/* Prev arrow */}
+      {hasPrev && (
         <button
           onClick={goPrev}
           aria-label="Previous mix"
-          className="fixed z-[4] flex items-center justify-center transition-all duration-[160ms]"
+          className="fixed z-[120] flex items-center justify-center"
           style={{
             left: "clamp(10px,2vw,24px)",
             top: "50%",
@@ -279,26 +362,29 @@ export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
             border: "1px solid rgba(255,255,255,.08)",
             color: "#f4efe6",
             cursor: "pointer",
+            transition: "background .16s, border-color .16s",
           }}
           onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,.14)";
-            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,.3)";
+            const btn = e.currentTarget as HTMLButtonElement;
+            btn.style.background = "rgba(255,255,255,.14)";
+            btn.style.borderColor = "rgba(255,255,255,.3)";
           }}
           onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,.06)";
-            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,.08)";
+            const btn = e.currentTarget as HTMLButtonElement;
+            btn.style.background = "rgba(255,255,255,.06)";
+            btn.style.borderColor = "rgba(255,255,255,.08)";
           }}
         >
           <ArrowIcon dir="prev" />
         </button>
       )}
 
-      {/* Next */}
-      {next && (
+      {/* Next arrow */}
+      {hasNext && (
         <button
           onClick={goNext}
           aria-label="Next mix"
-          className="fixed z-[4] flex items-center justify-center transition-all duration-[160ms]"
+          className="fixed z-[120] flex items-center justify-center"
           style={{
             right: "clamp(10px,2vw,24px)",
             top: "50%",
@@ -309,18 +395,49 @@ export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
             border: "1px solid rgba(255,255,255,.08)",
             color: "#f4efe6",
             cursor: "pointer",
+            transition: "background .16s, border-color .16s",
           }}
           onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,.14)";
-            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,.3)";
+            const btn = e.currentTarget as HTMLButtonElement;
+            btn.style.background = "rgba(255,255,255,.14)";
+            btn.style.borderColor = "rgba(255,255,255,.3)";
           }}
           onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,.06)";
-            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,.08)";
+            const btn = e.currentTarget as HTMLButtonElement;
+            btn.style.background = "rgba(255,255,255,.06)";
+            btn.style.borderColor = "rgba(255,255,255,.08)";
           }}
         >
           <ArrowIcon dir="next" />
         </button>
+      )}
+
+      {/* Counter — bottom center */}
+      {filteredIds && currentIndex !== -1 && (
+        <div
+          className="fixed z-[120]"
+          style={{
+            bottom: "clamp(16px,3vw,28px)",
+            left: "50%",
+            transform: "translateX(-50%)",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "7px 18px",
+            borderRadius: 999,
+            background: "rgba(20,17,12,.75)",
+            border: "1px solid rgba(255,255,255,.1)",
+            backdropFilter: "blur(12px)",
+            fontFamily: "var(--font-mono)",
+            fontSize: 12,
+            letterSpacing: ".08em",
+            color: "#f4efe6",
+          }}
+        >
+          <span style={{ color: "#e0573f", fontWeight: 600 }}>{currentIndex + 1}</span>
+          <span style={{ color: "#9f988a" }}>/</span>
+          <span>{filteredIds.length}</span>
+        </div>
       )}
     </>
   );
@@ -335,7 +452,7 @@ export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
       >
         <div
           className="lb-backdrop-anim absolute inset-0"
-          style={{ background: "rgba(6,5,3,.8)", backdropFilter: "blur(12px) saturate(1.1)" }}
+          style={{ background: "rgba(6,5,3,.82)", backdropFilter: "blur(14px) saturate(1.1)" }}
           onClick={close}
         />
         {chrome}
@@ -355,7 +472,7 @@ export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
   );
 }
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function MetaKey({ children }: { children: React.ReactNode }) {
   return (
@@ -368,6 +485,7 @@ function MetaKey({ children }: { children: React.ReactNode }) {
         color: "#9f988a",
         alignSelf: "start",
         paddingTop: 2,
+        whiteSpace: "nowrap",
       }}
     >
       {children}
@@ -380,10 +498,11 @@ function MetaVal({ children, mono, dim }: { children: React.ReactNode; mono?: bo
     <span
       style={{
         fontFamily: dim || mono ? "var(--font-mono)" : "var(--font-sans)",
-        fontSize: dim ? 13.5 : mono ? 14 : 15,
-        fontWeight: dim ? 500 : 600,
+        fontSize: dim ? 12 : mono ? 13.5 : 15,
+        fontWeight: dim ? 400 : 600,
         color: dim ? "#9f988a" : "#f4efe6",
-        lineHeight: dim ? 1.45 : undefined,
+        lineHeight: dim ? 1.5 : undefined,
+        wordBreak: "break-all",
       }}
     >
       {children}

@@ -63,7 +63,7 @@ const ArrowDown = () => (
   </svg>
 );
 
-// ─── Facet dropdown ─────────────────────────────────────────────────────────────────────────────────
+// ─── Facet dropdown ───────────────────────────────────────────────────────────
 
 function Facet({
   f, opts, optCounts, sel, open, onOpen, onToggle,
@@ -122,7 +122,7 @@ function Facet({
   );
 }
 
-// ─── Sort menu ────────────────────────────────────────────────────────────────────────────────
+// ─── Sort menu ────────────────────────────────────────────────────────────────
 
 function SortMenu({
   sort, setSort, open, onOpen,
@@ -142,7 +142,7 @@ function SortMenu({
         <ChevIcon open={open} />
       </button>
       {open && (
-        <div className="mix-sort-pop">
+        <div className="mix-sort-pop" style={{ left: "auto", right: 0 }}>
           {SORTS.map((s) => (
             <div className="mix-sort-grp" key={s.key}>
               <span className="flex-1" style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "#f4efe6" }}>
@@ -172,7 +172,7 @@ function SortMenu({
   );
 }
 
-// ─── HomePage ────────────────────────────────────────────────────────────────────────────────
+// ─── HomePage ─────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
   const [allMixes, setAllMixes] = useState<Mix[]>([]);
@@ -261,6 +261,7 @@ export default function HomePage() {
     return result;
   }, [allMixes, sel, searchQuery, sort]);
 
+  const filteredIds = useMemo(() => filteredMixes.map((m) => m.id), [filteredMixes]);
   const visibleMixes = filteredMixes.slice(0, visibleCount);
   const hasMore = visibleCount < filteredMixes.length;
   const anyActive = FACETS.some((f) => sel[f.id].size > 0) || !!searchQuery.trim();
@@ -300,61 +301,63 @@ export default function HomePage() {
 
   return (
     <div className="min-h-dvh">
-      {/* Filter bar */}
+      {/* Filter bar — count left | facets center | sort right */}
       <div
-        className="flex items-center justify-center flex-wrap"
-        style={{ gap: 10, padding: "clamp(34px,4.5vw,52px) clamp(20px,4vw,56px) 6px" }}
+        className="flex items-center"
+        style={{ gap: 12, padding: "clamp(20px,3vw,32px) clamp(20px,4vw,56px) 6px" }}
       >
-        {FACETS.map((f) => (
-          <Facet
-            key={f.id}
-            f={f}
-            opts={opts[f.id as keyof typeof opts]}
-            optCounts={optCounts[f.id]}
-            sel={sel[f.id]}
-            open={openFacet === f.id}
-            onOpen={() => {
-              setSortOpen(false);
-              setOpenFacet((o) => (o === f.id ? null : f.id));
-            }}
-            onToggle={toggle}
-          />
-        ))}
-
-        <span style={{ width: 1, height: 22, background: "rgba(255,255,255,.08)", margin: "0 4px", flexShrink: 0 }} />
-
-        <SortMenu
-          sort={sort}
-          setSort={(s) => { setSort(s); setVisibleCount(INITIAL_COUNT); }}
-          open={sortOpen}
-          onOpen={() => { setOpenFacet(null); setSortOpen((o) => !o); }}
-        />
-
-        {anyActive && (
-          <button
-            className="mix-facet"
-            style={{ background: "transparent", border: 0, color: "#9f988a", padding: "9px 6px" }}
-            onClick={clearAll}
-          >
-            clear all
-          </button>
-        )}
-
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11.5, color: "#9f988a", letterSpacing: ".04em", marginLeft: 8 }}>
-          {filteredMixes.length} / {allMixes.length} mixes
+        {/* Count */}
+        <span className="shrink-0" style={{ fontFamily: "var(--font-mono)", fontSize: 11.5, color: "#9f988a", letterSpacing: ".04em", whiteSpace: "nowrap" }}>
+          {filteredMixes.length}<span style={{ opacity: .5 }}>/{allMixes.length}</span>
         </span>
 
-        {!loading && (
-          <button
-            onClick={() => setEditMode((v) => !v)}
-            className={`mix-facet${editMode ? " active" : ""}`}
-            aria-label="Toggle edit mode"
-            style={{ marginLeft: "auto" }}
-          >
-            <Pencil size={11} />
-            Edit
-          </button>
-        )}
+        {/* Facets — centered */}
+        <div className="flex-1 flex items-center justify-center flex-wrap" style={{ gap: 8 }}>
+          {FACETS.map((f) => (
+            <Facet
+              key={f.id}
+              f={f}
+              opts={opts[f.id as keyof typeof opts]}
+              optCounts={optCounts[f.id]}
+              sel={sel[f.id]}
+              open={openFacet === f.id}
+              onOpen={() => {
+                setSortOpen(false);
+                setOpenFacet((o) => (o === f.id ? null : f.id));
+              }}
+              onToggle={toggle}
+            />
+          ))}
+          {anyActive && (
+            <button
+              className="mix-facet"
+              style={{ background: "transparent", border: 0, color: "#9f988a", padding: "9px 6px" }}
+              onClick={clearAll}
+            >
+              clear all
+            </button>
+          )}
+        </div>
+
+        {/* Sort + Edit — right */}
+        <div className="flex items-center gap-2 shrink-0">
+          <SortMenu
+            sort={sort}
+            setSort={(s) => { setSort(s); setVisibleCount(INITIAL_COUNT); }}
+            open={sortOpen}
+            onOpen={() => { setOpenFacet(null); setSortOpen((o) => !o); }}
+          />
+          {!loading && (
+            <button
+              onClick={() => setEditMode((v) => !v)}
+              className={`mix-facet${editMode ? " active" : ""}`}
+              aria-label="Toggle edit mode"
+            >
+              <Pencil size={11} />
+              Edit
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Active chips */}
@@ -423,6 +426,7 @@ export default function HomePage() {
               index={i}
               editMode={editMode}
               onPatch={patchMix}
+              filteredIds={filteredIds}
             />
           ))}
         </div>
@@ -433,21 +437,23 @@ export default function HomePage() {
   );
 }
 
-// ─── MixCard ─────────────────────────────────────────────────────────────────────────────
+// ─── MixCard ─────────────────────────────────────────────────────────────────
 
 function MixCard({
-  mix, index, editMode, onPatch,
+  mix, index, editMode, onPatch, filteredIds,
 }: {
   mix: Mix;
   index: number;
   editMode: boolean;
   onPatch: (id: string, fields: Partial<Pick<Mix, "player" | "movie" | "mix_name">>) => void;
+  filteredIds: string[];
 }) {
   const thumbnail = mix.image ?? mix.fb_image;
   const base = BASES[index % BASES.length];
   const tintBg = `linear-gradient(155deg, color-mix(in srgb, ${base} 70%, #fff 14%), ${base} 62%, #0b0a07)`;
   const title = mix.mix_name ?? [mix.player, mix.movie].filter(Boolean).join(" × ");
   const location = useLocation();
+  const cardNum = `#${String(index + 1).padStart(3, "0")}`;
 
   if (editMode) {
     return (
@@ -459,7 +465,7 @@ function MixCard({
             src={thumbnail}
             alt=""
             loading="lazy"
-            className="absolute inset-0 w-full h-full object-contain opacity-50"
+            className="absolute inset-0 w-full h-full object-cover opacity-50"
           />
         )}
         <div className="absolute inset-0 bg-black/50" />
@@ -490,7 +496,7 @@ function MixCard({
   return (
     <Link
       to={`/mix/${mix.id}`}
-      state={{ backgroundLocation: location }}
+      state={{ backgroundLocation: location, filteredIds }}
       className="mix-tile block relative aspect-[2/3] overflow-hidden rounded-[11px] cursor-pointer isolate"
       tabIndex={0}
       aria-label={title}
@@ -502,7 +508,7 @@ function MixCard({
             src={thumbnail}
             alt=""
             loading="lazy"
-            className="absolute inset-0 w-full h-full object-contain"
+            className="absolute inset-0 w-full h-full object-cover"
           />
         ) : (
           <div
@@ -519,59 +525,25 @@ function MixCard({
       {/* Holographic foil layer */}
       <div className="mix-holo" />
 
-      {/* "drop the poster" hint when no image */}
-      {!thumbnail && (
-        <span
-          className="absolute right-[11px] bottom-[11px] z-[7]"
-          style={{ fontFamily: "var(--font-mono)", fontSize: 8.5, letterSpacing: ".1em", textTransform: "uppercase", color: "rgba(255,255,255,.28)" }}
-        >
-          drop the poster
-        </span>
-      )}
-
-      {/* Hover overlay */}
-      <div
-        className="mix-tile-ov absolute inset-0 z-[8] flex items-end"
+      {/* Card number — always visible */}
+      <span
+        className="absolute left-[10px] bottom-[10px] z-[9]"
         style={{
-          padding: "14px 13px",
-          background: "linear-gradient(to top, rgba(8,6,4,.95) 8%, rgba(8,6,4,.5) 40%, transparent 66%)",
+          fontFamily: "var(--font-mono)",
+          fontSize: 9,
+          letterSpacing: ".1em",
+          color: "rgba(255,255,255,.5)",
+          lineHeight: 1,
+          textShadow: "0 1px 4px rgba(0,0,0,.7)",
         }}
       >
-        <div className="min-w-0">
-          <div
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontWeight: 800,
-              fontSize: "clamp(19px,1.9vw,27px)",
-              lineHeight: 1.02,
-              color: "#fff",
-              letterSpacing: "-.015em",
-            }}
-          >
-            {mix.player && mix.movie ? (
-              <>
-                {mix.player} <em className="not-italic text-brand">×</em> {mix.movie}
-              </>
-            ) : (
-              title
-            )}
-          </div>
-          {(mix.autor_mix || mix.autor_montage) && (
-            <div
-              style={{ fontFamily: "var(--font-mono)", fontSize: 9.5, letterSpacing: ".04em", color: "rgba(255,255,255,.6)", marginTop: 6, lineHeight: 1.4 }}
-            >
-              {mix.autor_mix && <>MIX <b style={{ color: "rgba(255,255,255,.85)", fontWeight: 500 }}>{mix.autor_mix}</b></>}
-              {mix.autor_mix && mix.autor_montage && " · "}
-              {mix.autor_montage && <>MONTAGE <b style={{ color: "rgba(255,255,255,.85)", fontWeight: 500 }}>{mix.autor_montage}</b></>}
-            </div>
-          )}
-        </div>
-      </div>
+        {cardNum}
+      </span>
     </Link>
   );
 }
 
-// ─── EditField ────────────────────────────────────────────────────────────────────────────
+// ─── EditField ────────────────────────────────────────────────────────────────
 
 function EditField({
   label, value, onSave, saveToDb,
