@@ -38,21 +38,11 @@ function fmtDate(d: string | null) {
   }
 }
 
-function fmtDatetime(d: string | null) {
-  if (!d) return null;
-  try {
-    return new Date(d).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
-  } catch {
-    return d;
-  }
-}
-
 export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Filter-aware navigation: read filteredIds passed via router state
   const filteredIds: string[] | null = (location.state as { filteredIds?: string[] } | null)?.filteredIds ?? null;
   const currentIndex = filteredIds && id ? filteredIds.indexOf(id) : -1;
   const prevId = filteredIds && currentIndex > 0 ? filteredIds[currentIndex - 1] : null;
@@ -201,10 +191,14 @@ export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
             {title}
           </h1>
 
-          {/* Subtitle: show player × movie below if mix_name is primary */}
-          {mixName && playerMovie && (
-            <p style={{ fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: 600, color: "#9f988a", margin: "8px 0 0", letterSpacing: ".01em" }}>
-              {playerMovie}
+          {/* Subtitle: date · Mix: xx · Montage: yy */}
+          {(mix.fb_publication_date || mix.autor_mix || mix.autor_montage) && (
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#9f988a", margin: "10px 0 0", letterSpacing: ".03em", lineHeight: 1.6 }}>
+              {[
+                mix.fb_publication_date ? fmtDate(mix.fb_publication_date) : null,
+                mix.autor_mix ? `Mix : ${mix.autor_mix}` : null,
+                mix.autor_montage ? `Montage : ${mix.autor_montage}` : null,
+              ].filter(Boolean).join("  ·  ")}
             </p>
           )}
 
@@ -218,92 +212,33 @@ export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
               paddingTop: 20,
             }}
           >
-            {/* All available database fields */}
-            {mix.mix_name && (
-              <>
-                <MetaKey>Mix Name</MetaKey>
-                <MetaVal>{mix.mix_name}</MetaVal>
-              </>
-            )}
-            {mix.player && (
-              <>
-                <MetaKey>Player</MetaKey>
-                <MetaVal>{mix.player}</MetaVal>
-              </>
-            )}
-            {mix.movie && (
-              <>
-                <MetaKey>Movie</MetaKey>
-                <MetaVal>{mix.movie}{mix.movie_year ? ` (${mix.movie_year})` : ""}</MetaVal>
-              </>
-            )}
-            {mix.movie_year && !mix.movie && (
-              <>
-                <MetaKey>Movie Year</MetaKey>
-                <MetaVal mono>{mix.movie_year}</MetaVal>
-              </>
-            )}
-            {mix.autor_mix && (
-              <>
-                <MetaKey>Mix Author</MetaKey>
-                <MetaVal>{mix.autor_mix}</MetaVal>
-              </>
-            )}
-            {mix.autor_montage && (
-              <>
-                <MetaKey>Montage</MetaKey>
-                <MetaVal>{mix.autor_montage}</MetaVal>
-              </>
-            )}
-            {mix.fb_publication_autor && (
-              <>
-                <MetaKey>Published By</MetaKey>
-                <MetaVal>{mix.fb_publication_autor}</MetaVal>
-              </>
-            )}
-            {mix.fb_publication_date && (
-              <>
-                <MetaKey>Published</MetaKey>
-                <MetaVal mono>{fmtDate(mix.fb_publication_date)}</MetaVal>
-              </>
-            )}
-            {mix.fb_description && (
-              <>
-                <MetaKey>Description</MetaKey>
-                <MetaVal dim>{mix.fb_description}</MetaVal>
-              </>
-            )}
-            {mix.fb_url && (
-              <>
-                <MetaKey>Source</MetaKey>
-                <MetaVal>
-                  <a
-                    href={mix.fb_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 hover:text-brand transition-colors"
-                  >
-                    Open link <ExternalIcon />
-                  </a>
-                </MetaVal>
-              </>
-            )}
-            {mix.created_at && (
-              <>
-                <MetaKey>Added</MetaKey>
-                <MetaVal mono dim>{fmtDatetime(mix.created_at)}</MetaVal>
-              </>
-            )}
-            {mix.updated_at && mix.updated_at !== mix.created_at && (
-              <>
-                <MetaKey>Updated</MetaKey>
-                <MetaVal mono dim>{fmtDatetime(mix.updated_at)}</MetaVal>
-              </>
-            )}
-            <>
-              <MetaKey>ID</MetaKey>
-              <MetaVal mono dim>{mix.id}</MetaVal>
-            </>
+            <MetaKey>Player</MetaKey>
+            <MetaVal dim={!mix.player}>{mix.player ?? "—"}</MetaVal>
+
+            <MetaKey>Movie</MetaKey>
+            <MetaVal dim={!mix.movie}>{mix.movie ?? "—"}</MetaVal>
+
+            <MetaKey>Year</MetaKey>
+            <MetaVal mono dim={!mix.movie_year}>{mix.movie_year ?? "—"}</MetaVal>
+
+            <MetaKey>Comment</MetaKey>
+            <MetaVal dim>{mix.fb_description ?? "—"}</MetaVal>
+
+            <MetaKey>Source</MetaKey>
+            <MetaVal>
+              {mix.fb_url ? (
+                <a
+                  href={mix.fb_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 hover:text-brand transition-colors"
+                >
+                  Open link <ExternalIcon />
+                </a>
+              ) : (
+                <span style={{ color: "#9f988a" }}>—</span>
+              )}
+            </MetaVal>
           </div>
         </div>
       ) : null}
