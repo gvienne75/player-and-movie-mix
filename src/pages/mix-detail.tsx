@@ -38,11 +38,13 @@ function fmtDate(d: string | null) {
   }
 }
 
+
 export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Filter-aware navigation: read filteredIds passed via router state
   const filteredIds: string[] | null = (location.state as { filteredIds?: string[] } | null)?.filteredIds ?? null;
   const currentIndex = filteredIds && id ? filteredIds.indexOf(id) : -1;
   const prevId = filteredIds && currentIndex > 0 ? filteredIds[currentIndex - 1] : null;
@@ -123,6 +125,11 @@ export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
   const playerMovie = [mix?.player, mix?.movie].filter(Boolean).join(" × ");
   const title = mixName ?? playerMovie ?? "";
 
+  // Fallback: if autor_mix, autor_montage AND fb_description are all empty, use fb_publication_autor for both
+  const allEmpty = mix && !mix.autor_mix && !mix.autor_montage && !mix.fb_description;
+  const displayAutorMix = mix?.autor_mix ?? (allEmpty ? (mix?.fb_publication_autor ?? null) : null);
+  const displayAutorMontage = mix?.autor_montage ?? (allEmpty ? (mix?.fb_publication_autor ?? null) : null);
+
   const inner = (
     <div
       className="lb-inner-anim relative z-10 flex items-start w-full"
@@ -192,12 +199,12 @@ export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
           </h1>
 
           {/* Subtitle: date · Mix: xx · Montage: yy */}
-          {(mix.fb_publication_date || mix.autor_mix || mix.autor_montage) && (
+          {(mix.fb_publication_date || displayAutorMix || displayAutorMontage) && (
             <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#9f988a", margin: "10px 0 0", letterSpacing: ".03em", lineHeight: 1.6 }}>
               {[
                 mix.fb_publication_date ? fmtDate(mix.fb_publication_date) : null,
-                mix.autor_mix ? `Mix : ${mix.autor_mix}` : null,
-                mix.autor_montage ? `Montage : ${mix.autor_montage}` : null,
+                displayAutorMix ? `Mix : ${displayAutorMix}` : null,
+                displayAutorMontage ? `Montage : ${displayAutorMontage}` : null,
               ].filter(Boolean).join("  ·  ")}
             </p>
           )}
@@ -239,6 +246,9 @@ export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
                 <span style={{ color: "#9f988a" }}>—</span>
               )}
             </MetaVal>
+
+            <MetaKey>Published by</MetaKey>
+            <MetaVal dim={!mix.fb_publication_autor}>{mix.fb_publication_autor ?? "—"}</MetaVal>
           </div>
         </div>
       ) : null}
@@ -407,7 +417,7 @@ export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
   );
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
 function MetaKey({ children }: { children: React.ReactNode }) {
   return (
