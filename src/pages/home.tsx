@@ -262,6 +262,15 @@ export default function HomePage() {
   }, [allMixes, sel, searchQuery, sort]);
 
   const filteredIds = useMemo(() => filteredMixes.map((m) => m.id), [filteredMixes]);
+
+  // Permanent rank: oldest fb_publication_date = #001, most recent = #215
+  const rankMap = useMemo(() => {
+    const sorted = [...allMixes].sort((a, b) =>
+      (a.fb_publication_date ?? "").localeCompare(b.fb_publication_date ?? "")
+    );
+    return new Map(sorted.map((m, i) => [m.id, i + 1]));
+  }, [allMixes]);
+
   const visibleMixes = filteredMixes.slice(0, visibleCount);
   const hasMore = visibleCount < filteredMixes.length;
   const anyActive = FACETS.some((f) => sel[f.id].size > 0) || !!searchQuery.trim();
@@ -430,6 +439,7 @@ export default function HomePage() {
               key={mix.id}
               mix={mix}
               index={i}
+              rank={rankMap.get(mix.id) ?? 0}
               editMode={editMode}
               onPatch={patchMix}
               filteredIds={filteredIds}
@@ -446,10 +456,11 @@ export default function HomePage() {
 // ─── MixCard ─────────────────────────────────────────────────────────────────
 
 function MixCard({
-  mix, index, editMode, onPatch, filteredIds,
+  mix, index, rank, editMode, onPatch, filteredIds,
 }: {
   mix: Mix;
   index: number;
+  rank: number;
   editMode: boolean;
   onPatch: (id: string, fields: Partial<Pick<Mix, "player" | "movie" | "mix_name">>) => void;
   filteredIds: string[];
@@ -459,7 +470,7 @@ function MixCard({
   const tintBg = `linear-gradient(155deg, color-mix(in srgb, ${base} 70%, #fff 14%), ${base} 62%, #0b0a07)`;
   const title = mix.mix_name ?? [mix.player, mix.movie].filter(Boolean).join(" × ");
   const location = useLocation();
-  const cardNum = `#${String(index + 1).padStart(3, "0")}`;
+  const cardNum = `#${String(rank).padStart(3, "0")}`;
 
   if (editMode) {
     return (
@@ -535,12 +546,12 @@ function MixCard({
       <div className="mix-tile-ov absolute inset-0 z-[8] flex items-end" style={{ pointerEvents: "none" }}>
         <div className="w-full" style={{ background: "linear-gradient(to top, rgba(0,0,0,.88) 0%, rgba(0,0,0,.5) 55%, transparent 100%)", padding: "36px 11px 11px" }}>
           {title && (
-            <p style={{ fontFamily: "var(--font-display)", fontSize: "clamp(14px,1.6vw,18px)", lineHeight: 1.05, color: "#fff", letterSpacing: ".02em", marginBottom: 4, overflowWrap: "break-word" }}>
+            <p style={{ fontFamily: "var(--font-display)", fontSize: "clamp(18px,2.2vw,26px)", lineHeight: 1.0, color: "#fff", letterSpacing: ".02em", marginBottom: 5, overflowWrap: "break-word" }}>
               {title}
             </p>
           )}
           {(mix.autor_mix || mix.autor_montage) && (
-            <p style={{ fontFamily: "var(--font-mono)", fontSize: 9.5, color: "rgba(255,255,255,.6)", letterSpacing: ".04em", lineHeight: 1.4 }}>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "rgba(255,255,255,.65)", letterSpacing: ".04em", lineHeight: 1.4 }}>
               {[
                 mix.autor_mix ? `Mix : ${mix.autor_mix}` : null,
                 mix.autor_montage ? `Montage : ${mix.autor_montage}` : null,
@@ -550,17 +561,21 @@ function MixCard({
         </div>
       </div>
 
-      {/* Card number — always visible, top-left */}
+      {/* Card number — badge, top-left, permanent date-based rank */}
       <span
-        className="absolute left-[10px] top-[10px] z-[9]"
+        className="absolute left-[9px] top-[9px] z-[9]"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 13,
-          letterSpacing: ".06em",
-          fontWeight: 600,
-          color: "rgba(255,255,255,.92)",
+          fontSize: 11,
+          letterSpacing: ".08em",
+          fontWeight: 700,
+          color: "#f4efe6",
           lineHeight: 1,
-          textShadow: "0 1px 8px rgba(0,0,0,.9), 0 0 2px rgba(0,0,0,.8)",
+          background: "rgba(10,8,6,.7)",
+          border: "1px solid rgba(255,255,255,.18)",
+          borderRadius: 5,
+          padding: "4px 7px",
+          backdropFilter: "blur(6px)",
         }}
       >
         {cardNum}
