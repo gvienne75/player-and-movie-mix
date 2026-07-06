@@ -11,12 +11,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const sql = neon(process.env.POSTGRES_URL!);
 
   if (req.method === "GET") {
-    const rows = await sql`
-      SELECT * FROM (
-        SELECT *, ROW_NUMBER() OVER (ORDER BY COALESCE(fb_publication_date::text, '') ASC) AS rank
-        FROM mixes
-      ) ranked WHERE id = ${id} LIMIT 1
-    `;
+    const rows = await sql`SELECT * FROM mixes WHERE id = ${id} LIMIT 1`;
     if (!rows[0]) return res.status(404).json({ error: "Not found" });
     return res.json(rows[0]);
   }

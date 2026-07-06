@@ -182,19 +182,6 @@ export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
         </div>
       ) : mix ? (
         <div className="flex-1 min-w-0 pt-2" style={{ maxWidth: 540 }}>
-          {mix.rank && (
-            <span style={{
-              display: "inline-block",
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              letterSpacing: ".1em",
-              fontWeight: 700,
-              color: "#9f988a",
-              marginBottom: 10,
-            }}>
-              #{String(mix.rank).padStart(3, "0")}
-            </span>
-          )}
           <h1
             style={{
               fontFamily: "var(--font-display)",
@@ -215,10 +202,10 @@ export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
           {(mix.fb_publication_date || displayAutorMix || displayAutorMontage) && (
             <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#9f988a", margin: "10px 0 0", letterSpacing: ".03em", lineHeight: 1.6 }}>
               {[
-                mix.fb_publication_date ? <span key="date">{fmtDate(mix.fb_publication_date)}</span> : null,
-                displayAutorMix ? <span key="mix">Mix by <span style={{ color: "#f4efe6", fontWeight: 700 }}>{displayAutorMix}</span></span> : null,
-                displayAutorMontage ? <span key="mont">Montage by <span style={{ color: "#f4efe6", fontWeight: 700 }}>{displayAutorMontage}</span></span> : null,
-              ].filter(Boolean).reduce<React.ReactNode[]>((acc, el, i) => i === 0 ? [el] : [...acc, <span key={`sep${i}`} style={{ margin: "0 6px", opacity: .5 }}>·</span>, el], [])}
+                mix.fb_publication_date ? fmtDate(mix.fb_publication_date) : null,
+                displayAutorMix ? `Mix : ${displayAutorMix}` : null,
+                displayAutorMontage ? `Montage : ${displayAutorMontage}` : null,
+              ].filter(Boolean).join("  ·  ")}
             </p>
           )}
 
@@ -430,7 +417,7 @@ export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
   );
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
 function MetaKey({ children }: { children: React.ReactNode }) {
   return (
