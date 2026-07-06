@@ -44,8 +44,10 @@ export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Filter-aware navigation: read filteredIds passed via router state
-  const filteredIds: string[] | null = (location.state as { filteredIds?: string[] } | null)?.filteredIds ?? null;
+  // Filter-aware navigation: read filteredIds + backgroundLocation passed via router state
+  const routeState = location.state as { filteredIds?: string[]; backgroundLocation?: { pathname: string; search?: string; hash?: string } } | null;
+  const filteredIds: string[] | null = routeState?.filteredIds ?? null;
+  const backgroundLocation = routeState?.backgroundLocation ?? null;
   const currentIndex = filteredIds && id ? filteredIds.indexOf(id) : -1;
   const prevId = filteredIds && currentIndex > 0 ? filteredIds[currentIndex - 1] : null;
   const nextId = filteredIds && currentIndex !== -1 && currentIndex < filteredIds.length - 1 ? filteredIds[currentIndex + 1] : null;
@@ -84,12 +86,21 @@ export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
     return () => { cancelled = true; };
   }, [id, shouldFetchAdjacent]);
 
+  const backLoc = useMemo(
+    () => backgroundLocation ?? { pathname: "/" },
+    // backgroundLocation comes from router state and only changes when we navigate
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [backgroundLocation?.pathname, (backgroundLocation as { search?: string } | null)?.search]
+  );
   const navState = useMemo(
-    () => modal ? { backgroundLocation: { pathname: "/" }, filteredIds } : { filteredIds },
-    [modal, filteredIds]
+    () => modal ? { backgroundLocation: backLoc, filteredIds } : { filteredIds },
+    [modal, filteredIds, backLoc]
   );
 
-  const close = useCallback(() => navigate("/"), [navigate]);
+  const close = useCallback(() => {
+    const search = (backLoc as { search?: string }).search ?? "";
+    navigate(backLoc.pathname + search);
+  }, [navigate, backLoc]);
 
   const goNext = useCallback(() => {
     const targetId = nextId ?? apiNext?.id;
