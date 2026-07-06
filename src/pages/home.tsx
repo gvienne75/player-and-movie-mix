@@ -563,7 +563,7 @@ function MixCard({
             src={thumbnail}
             alt=""
             loading="lazy"
-            className="absolute inset-0 w-full h-full object-contain"
+            className="absolute inset-0 w-full h-full object-cover"
           />
         ) : (
           <div
