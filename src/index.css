@@ -49,10 +49,6 @@
 }
 
 /* ─── Animations ─── */
-@keyframes holo-shift {
-  0%   { background-position: 0% 0%; }
-  100% { background-position: 220% 220%; }
-}
 @keyframes lb-fade {
   to { opacity: 1; }
 }
@@ -179,25 +175,6 @@
 }
 .mix-tile-ov { opacity: 0; transition: opacity .24s ease; }
 .mix-tile:hover .mix-tile-ov { opacity: 1; }
-.mix-grain {
-  position: absolute; inset: 0; opacity: .5; mix-blend-mode: overlay;
-  background-image: radial-gradient(rgba(255,255,255,.5) .5px, transparent .6px);
-  background-size: 3px 3px; pointer-events: none;
-}
-.mix-sheen {
-  position: absolute; inset: 0;
-  background: radial-gradient(120% 80% at 50% -10%, rgba(255,255,255,.14), transparent 55%),
-              linear-gradient(180deg, transparent 40%, rgba(0,0,0,.4));
-  pointer-events: none;
-}
-.mix-holo {
-  position: absolute; inset: 0; z-index: 2; opacity: 0; pointer-events: none;
-  mix-blend-mode: color-dodge;
-  background: conic-gradient(from 200deg at 30% 20%, #ff2db333, #2dd4ff33, #ffe14d33, #36ff8533, #b14dff33, #ff2db333);
-  background-size: 220% 220%;
-  transition: opacity .4s;
-  animation: holo-shift 6s linear infinite;
-}
 
 /* ─── Lightbox animations ─── */
 .lb-backdrop-anim { opacity: 0; animation: lb-fade .32s ease forwards; }

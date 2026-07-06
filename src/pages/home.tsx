@@ -573,12 +573,7 @@ function MixCard({
             {index + 1}
           </div>
         )}
-        <div className="mix-sheen" />
-        <div className="mix-grain" />
       </div>
-
-      {/* Holographic foil layer */}
-      <div className="mix-holo" />
 
       {/* Hover overlay — mix name + authors */}
       <div className="mix-tile-ov absolute inset-0 z-[8] flex items-end" style={{ pointerEvents: "none" }}>
