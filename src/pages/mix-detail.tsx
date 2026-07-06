@@ -162,7 +162,7 @@ export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
           <img
             src={thumbnail}
             alt={title}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-contain"
           />
         ) : (
           <div
