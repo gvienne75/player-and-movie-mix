@@ -85,7 +85,7 @@ function Facet({
         aria-expanded={open}
       >
         {f.label}
-        {sel.size > 0 && (
+        {sel.size > 0 ? (
           <span style={{
             minWidth: 17, height: 17, padding: "0 4px", borderRadius: 9,
             background: "#e0573f", color: "#15110f",
@@ -93,6 +93,10 @@ function Facet({
             display: "inline-flex", alignItems: "center", justifyContent: "center",
           }}>
             {sel.size}
+          </span>
+        ) : (
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "#9f988a" }}>
+            {opts.length}
           </span>
         )}
         <ChevIcon open={open} />
@@ -214,14 +218,7 @@ export default function HomePage() {
     setAllMixes((prev) => prev.map((m) => (m.id === id ? { ...m, ...fields } : m)));
   }
 
-  const opts = useMemo(() => ({
-    p:    [...new Set(allMixes.map((m) => m.player).filter(Boolean))].sort() as string[],
-    m:    [...new Set(allMixes.map((m) => m.movie).filter(Boolean))].sort() as string[],
-    mix:  [...new Set(allMixes.map((m) => m.autor_mix).filter(Boolean))].sort() as string[],
-    mont: [...new Set(allMixes.map((m) => m.autor_montage).filter(Boolean))].sort() as string[],
-  }), [allMixes]);
-
-  const optCounts = useMemo(() => {
+  const { opts, optCounts } = useMemo(() => {
     const counts: Record<string, Record<string, number>> = { p: {}, m: {}, mix: {}, mont: {} };
     for (const mix of allMixes) {
       for (const { id, field } of FACETS) {
@@ -229,7 +226,11 @@ export default function HomePage() {
         if (v) counts[id][v] = (counts[id][v] ?? 0) + 1;
       }
     }
-    return counts;
+    const sorted: Record<string, string[]> = {};
+    for (const { id } of FACETS) {
+      sorted[id] = Object.keys(counts[id]).sort((a, b) => counts[id][b] - counts[id][a]);
+    }
+    return { opts: sorted, optCounts: counts };
   }, [allMixes]);
 
   const missingCount = useMemo(
