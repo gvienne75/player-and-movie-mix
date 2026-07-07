@@ -1,15 +1,20 @@
 /**
  * One-time migration: copies all rows from Supabase → Neon PostgreSQL.
- * Run: POSTGRES_URL="..." node scripts/migrate-to-neon.mjs
+ * Run: SUPABASE_ANON_KEY="..." POSTGRES_URL="..." node scripts/migrate-to-neon.mjs
  */
 
 import { neon } from "@neondatabase/serverless";
+import { config } from "dotenv";
+config({ path: ".env" });
 
 const SUPABASE_URL = "https://ndhvpdaojmusezmhgxxn.supabase.co";
-const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kaHZwZGFvam11c2V6bWhneHhuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3ODgwNDIsImV4cCI6MjA5MDM2NDA0Mn0.KV_uAJ_kYt7VEjic-vbQb-EqueWJ--iZ93M_IbzYgLI";
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const POSTGRES_URL = process.env.POSTGRES_URL;
 
+if (!SUPABASE_ANON_KEY) {
+  console.error("SUPABASE_ANON_KEY is not set.");
+  process.exit(1);
+}
 if (!POSTGRES_URL) {
   console.error("POSTGRES_URL is not set.");
   process.exit(1);
