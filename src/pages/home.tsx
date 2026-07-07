@@ -228,7 +228,7 @@ export default function HomePage() {
     }
     const sorted: Record<string, string[]> = {};
     for (const { id } of FACETS) {
-      sorted[id] = Object.keys(counts[id]).sort((a, b) => counts[id][b] - counts[id][a]);
+      sorted[id] = Object.keys(counts[id]).sort((a, b) => (counts[id][b] - counts[id][a]) || a.localeCompare(b));
     }
     return { opts: sorted, optCounts: counts };
   }, [allMixes]);
