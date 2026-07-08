@@ -62,14 +62,14 @@ export function SendMixModal({ open, onClose }: { open: boolean; onClose: () => 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!file) {
-      setErrorMsg("Merci d'ajouter une image de cover.");
+      setErrorMsg("Please add a cover image.");
       setStatus("error");
       return;
     }
     setStatus("sending");
     try {
       if (file.size > 3 * 1024 * 1024) {
-        alert("Image trop lourde (max 3 Mo)");
+        alert("Image too large (max 3 MB)");
         setStatus("idle");
         return;
       }
@@ -148,8 +148,8 @@ export function SendMixModal({ open, onClose }: { open: boolean; onClose: () => 
 
           {status === "ok" ? (
             <div style={{ textAlign: "center", padding: "20px 0 8px" }}>
-              <p style={{ fontFamily: "var(--font-display)", fontSize: 24, color: "#e0573f", letterSpacing: ".05em" }}>MIX ENVOYÉ !</p>
-              <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#9f988a", marginTop: 8 }}>Merci pour ta contribution.</p>
+              <p style={{ fontFamily: "var(--font-display)", fontSize: 24, color: "#e0573f", letterSpacing: ".05em" }}>MIX SENT!</p>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#9f988a", marginTop: 8 }}>Thanks for your contribution.</p>
               <button
                 onClick={handleClose}
                 style={{
@@ -161,7 +161,7 @@ export function SendMixModal({ open, onClose }: { open: boolean; onClose: () => 
                   cursor: "pointer",
                 }}
               >
-                Fermer
+                Close
               </button>
             </div>
           ) : (
@@ -240,7 +240,7 @@ export function SendMixModal({ open, onClose }: { open: boolean; onClose: () => 
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {file ? file.name : "Choisir une image… (max 3 Mo)"}
+                  {file ? file.name : "Choose an image… (max 3 MB)"}
                 </button>
               </div>
 
