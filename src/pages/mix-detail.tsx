@@ -22,12 +22,6 @@ const ArrowIcon = ({ dir }: { dir: "prev" | "next" }) => (
   </svg>
 );
 
-const ExternalIcon = () => (
-  <svg width={12} height={12} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M7 3H3a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V9" />
-    <path d="M13 3h-4m4 0v4m0-4L8 8" />
-  </svg>
-);
 
 function fmtDate(d: string | null) {
   if (!d) return null;
@@ -213,10 +207,18 @@ export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
           {(mix.fb_publication_date || displayAutorMix || displayAutorMontage) && (
             <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "#9f988a", margin: "10px 0 0", letterSpacing: ".03em", lineHeight: 1.6 }}>
               {[
-                mix.fb_publication_date ? fmtDate(mix.fb_publication_date) : null,
-                displayAutorMix ? `Mix : ${displayAutorMix}` : null,
-                displayAutorMontage ? `Montage : ${displayAutorMontage}` : null,
-              ].filter(Boolean).join("  ·  ")}
+                mix.fb_publication_date
+                  ? <span key="date"><b style={{ color: "#f4efe6", fontWeight: 700 }}>{fmtDate(mix.fb_publication_date)}</b></span>
+                  : null,
+                displayAutorMix
+                  ? <span key="mix">Mix : <b style={{ color: "#f4efe6", fontWeight: 700 }}>{displayAutorMix}</b></span>
+                  : null,
+                displayAutorMontage
+                  ? <span key="mont">Montage : <b style={{ color: "#f4efe6", fontWeight: 700 }}>{displayAutorMontage}</b></span>
+                  : null,
+              ]
+                .filter(Boolean)
+                .flatMap((el, i) => i === 0 ? [el] : [<span key={`sep-${i}`} style={{ margin: "0 5px" }}>·</span>, el])}
             </p>
           )}
 
@@ -234,32 +236,14 @@ export default function MixDetailPage({ modal = false }: { modal?: boolean }) {
             <MetaVal dim={!mix.player}>{mix.player ?? "—"}</MetaVal>
 
             <MetaKey>Movie</MetaKey>
-            <MetaVal dim={!mix.movie}>{mix.movie ?? "—"}</MetaVal>
-
-            <MetaKey>Year</MetaKey>
-            <MetaVal mono dim={!mix.movie_year}>{mix.movie_year ?? "—"}</MetaVal>
-
-            <MetaKey>Comment</MetaKey>
-            <MetaVal dim>{mix.fb_description ?? "—"}</MetaVal>
-
-            <MetaKey>Source</MetaKey>
-            <MetaVal>
-              {mix.fb_url ? (
-                <a
-                  href={mix.fb_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 hover:text-brand transition-colors"
-                >
-                  Open link <ExternalIcon />
-                </a>
-              ) : (
-                <span style={{ color: "#9f988a" }}>—</span>
-              )}
+            <MetaVal dim={!mix.movie}>
+              {mix.movie ? (
+                <>
+                  {mix.movie}
+                  {mix.movie_year && <span style={{ color: "#9f988a", fontWeight: 400, fontSize: 13 }}> ({mix.movie_year})</span>}
+                </>
+              ) : "—"}
             </MetaVal>
-
-            <MetaKey>Published by</MetaKey>
-            <MetaVal dim={!mix.fb_publication_autor}>{mix.fb_publication_autor ?? "—"}</MetaVal>
           </div>
         </div>
       ) : null}
