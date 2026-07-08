@@ -162,7 +162,7 @@ export function SendMixModal({ open, onClose }: { open: boolean; onClose: () => 
                 <input
                   value={mixName}
                   onChange={(e) => setMixName(e.target.value)}
-                  placeholder="Ex: Gladiambappé"
+                  placeholder="Ex: Ace Venthuram"
                   style={fieldStyle}
                 />
               </div>
@@ -171,7 +171,7 @@ export function SendMixModal({ open, onClose }: { open: boolean; onClose: () => 
                 <input
                   value={player}
                   onChange={(e) => setPlayer(e.target.value)}
-                  placeholder="Ex: Kylian Mbappé"
+                  placeholder="Ex: Lilian Thuram"
                   style={fieldStyle}
                 />
               </div>
@@ -180,7 +180,7 @@ export function SendMixModal({ open, onClose }: { open: boolean; onClose: () => 
                 <input
                   value={movie}
                   onChange={(e) => setMovie(e.target.value)}
-                  placeholder="Ex: Gladiator"
+                  placeholder="Ex: Ace Ventura"
                   style={fieldStyle}
                 />
               </div>
