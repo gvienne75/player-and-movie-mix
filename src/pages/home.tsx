@@ -66,7 +66,7 @@ const ArrowDown = () => (
 // ─── Facet dropdown ───────────────────────────────────────────────────────────
 
 function Facet({
-  f, opts, optCounts, sel, open, onOpen, onToggle,
+  f, opts, optCounts, sel, open, onOpen, onToggle, labelFor,
 }: {
   f: typeof FACETS[number];
   opts: string[];
@@ -75,6 +75,7 @@ function Facet({
   open: boolean;
   onOpen: () => void;
   onToggle: (fid: string, val: string) => void;
+  labelFor?: (val: string) => string;
 }) {
   return (
     <div className="relative" data-facet>
@@ -114,7 +115,7 @@ function Facet({
               <span className={`mix-checkbox${sel.has(o) ? " checked" : ""}`}>
                 {sel.has(o) && <CheckIcon />}
               </span>
-              <span className="flex-1 text-left">{o}</span>
+              <span className="flex-1 text-left">{labelFor ? labelFor(o) : o}</span>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 10.5, color: "#9f988a" }}>
                 {optCounts[o] ?? 0}
               </span>
@@ -218,19 +219,21 @@ export default function HomePage() {
     setAllMixes((prev) => prev.map((m) => (m.id === id ? { ...m, ...fields } : m)));
   }
 
-  const { opts, optCounts } = useMemo(() => {
+  const { opts, optCounts, movieYears } = useMemo(() => {
     const counts: Record<string, Record<string, number>> = { p: {}, m: {}, mix: {}, mont: {} };
+    const years: Record<string, number> = {};
     for (const mix of allMixes) {
       for (const { id, field } of FACETS) {
         const v = mix[field] as string | null;
         if (v) counts[id][v] = (counts[id][v] ?? 0) + 1;
       }
+      if (mix.movie && mix.movie_year) years[mix.movie] = mix.movie_year;
     }
     const sorted: Record<string, string[]> = {};
     for (const { id } of FACETS) {
       sorted[id] = Object.keys(counts[id]).sort((a, b) => (counts[id][b] - counts[id][a]) || a.localeCompare(b));
     }
-    return { opts: sorted, optCounts: counts };
+    return { opts: sorted, optCounts: counts, movieYears: years };
   }, [allMixes]);
 
   const missingCount = useMemo(
@@ -344,6 +347,7 @@ export default function HomePage() {
                 setOpenFacet((o) => (o === f.id ? null : f.id));
               }}
               onToggle={toggle}
+              labelFor={f.id === "m" ? (v) => (movieYears[v] ? `${v} (${movieYears[v]})` : v) : undefined}
             />
           ))}
           <button
