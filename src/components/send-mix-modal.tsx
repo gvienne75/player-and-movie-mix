@@ -45,6 +45,7 @@ export function SendMixModal({ open, onClose }: { open: boolean; onClose: () => 
   const [movie, setMovie] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<"idle" | "sending" | "ok" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   function reset() {
@@ -74,7 +75,11 @@ export function SendMixModal({ open, onClose }: { open: boolean; onClose: () => 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mixName, player, movie, cover }),
       });
-      if (!res.ok) throw new Error();
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setErrorMsg(json.error ?? "Send failed");
+        throw new Error();
+      }
       setStatus("ok");
     } catch {
       setStatus("error");
@@ -213,7 +218,7 @@ export function SendMixModal({ open, onClose }: { open: boolean; onClose: () => 
 
               {status === "error" && (
                 <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#e0573f", margin: 0 }}>
-                  Erreur lors de l'envoi. Réessaie.
+                  {errorMsg || "Send failed. Please try again."}
                 </p>
               )}
 

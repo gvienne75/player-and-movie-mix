@@ -29,8 +29,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     </div>
   `;
 
-  const { error } = await resend.emails.send({
-    from: "Player × Movie Mix <onboarding@resend.dev>",
+  const { data, error } = await resend.emails.send({
+    from: "Player x Movie Mix <onboarding@resend.dev>",
     to: ["gregoire.vienne@gmail.com"],
     subject: `New Mix: ${mixName || player || "Untitled"}`,
     html,
@@ -40,9 +40,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   });
 
   if (error) {
-    console.error("Resend error:", error);
-    return res.status(500).json({ error: "Send failed" });
+    console.error("Resend error:", JSON.stringify(error));
+    return res.status(500).json({ error: error.message ?? "Send failed" });
   }
+  console.log("Email sent:", data?.id);
 
   return res.status(200).json({ ok: true });
 }
