@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { X } from "lucide-react";
+import { SendMixModal } from "./send-mix-modal";
 
 function FilmStrip() {
   return (
@@ -21,6 +23,7 @@ const SearchIcon = () => (
 export function SiteHeader() {
   const [searchParams, setSearchParams] = useSearchParams();
   const q = searchParams.get("q") ?? "";
+  const [sendOpen, setSendOpen] = useState(false);
 
   function handleSearch(value: string) {
     setSearchParams(
@@ -74,25 +77,51 @@ export function SiteHeader() {
         <FilmStrip />
       </a>
 
-      <div className="mix-search" style={{ marginLeft: "auto" }}>
-        <SearchIcon />
-        <input
-          type="text"
-          value={q}
-          onChange={(e) => handleSearch(e.target.value)}
-          placeholder="search a mix, a player…"
-          aria-label="Search mixes"
-        />
-        {q && (
-          <button
-            onClick={() => handleSearch("")}
-            className="text-[#9f988a] hover:text-[#f4efe6] transition-colors"
-            aria-label="Clear search"
-          >
-            <X size={13} />
-          </button>
-        )}
+      <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+        <div className="mix-search">
+          <SearchIcon />
+          <input
+            type="text"
+            value={q}
+            onChange={(e) => handleSearch(e.target.value)}
+            placeholder="search a mix, a player…"
+            aria-label="Search mixes"
+          />
+          {q && (
+            <button
+              onClick={() => handleSearch("")}
+              className="text-[#9f988a] hover:text-[#f4efe6] transition-colors"
+              aria-label="Clear search"
+            >
+              <X size={13} />
+            </button>
+          )}
+        </div>
+
+        <button
+          onClick={() => setSendOpen(true)}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "7px 14px",
+            background: "#e0573f",
+            border: "none",
+            borderRadius: 8,
+            color: "#15110f",
+            fontFamily: "var(--font-display)",
+            fontSize: 15,
+            letterSpacing: ".06em",
+            cursor: "pointer",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+          }}
+        >
+          + SEND A MIX
+        </button>
       </div>
+
+      <SendMixModal open={sendOpen} onClose={() => setSendOpen(false)} />
     </header>
   );
 }
