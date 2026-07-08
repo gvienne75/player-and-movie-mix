@@ -240,7 +240,7 @@ export function SendMixModal({ open, onClose }: { open: boolean; onClose: () => 
                   transition: "opacity .15s",
                 }}
               >
-                {status === "sending" ? "ENVOI EN COURS…" : "ENVOYER"}
+                {status === "sending" ? "SENDING…" : "SEND"}
               </button>
             </form>
           )}
