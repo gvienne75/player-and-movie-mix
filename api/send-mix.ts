@@ -14,7 +14,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log("send-mix called, body keys:", body ? Object.keys(body) : "null");
 
-    if (!process.env.RESEND_API_KEY) {
+    // Strip BOM (U+FEFF) that PowerShell may have prepended when piping to `vercel env add`
+    const apiKey = (process.env.RESEND_API_KEY ?? "").replace(/^\uFEFF/, "").trim();
+    if (!apiKey) {
       console.error("RESEND_API_KEY not set");
       return res.status(500).json({ error: "Email not configured (no API key)" });
     }
@@ -33,7 +35,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       </div>
     `;
 
-    const resend = new Resend(process.env.RESEND_API_KEY);
+    const resend = new Resend(apiKey);
 
     const { data, error } = await resend.emails.send({
       from: "onboarding@resend.dev",
