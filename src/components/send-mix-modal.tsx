@@ -43,13 +43,15 @@ export function SendMixModal({ open, onClose }: { open: boolean; onClose: () => 
   const [mixName, setMixName] = useState("");
   const [player, setPlayer] = useState("");
   const [movie, setMovie] = useState("");
+  const [senderName, setSenderName] = useState("");
+  const [senderEmail, setSenderEmail] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<"idle" | "sending" | "ok" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   function reset() {
-    setMixName(""); setPlayer(""); setMovie(""); setFile(null); setStatus("idle");
+    setMixName(""); setPlayer(""); setMovie(""); setSenderName(""); setSenderEmail(""); setFile(null); setStatus("idle");
   }
 
   function handleClose() {
@@ -59,21 +61,23 @@ export function SendMixModal({ open, onClose }: { open: boolean; onClose: () => 
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!file) {
+      setErrorMsg("Merci d'ajouter une image de cover.");
+      setStatus("error");
+      return;
+    }
     setStatus("sending");
     try {
-      let cover: { content: string; name: string; type: string } | undefined;
-      if (file) {
-        if (file.size > 3 * 1024 * 1024) {
-          alert("Image trop lourde (max 3 Mo)");
-          setStatus("idle");
-          return;
-        }
-        cover = { content: await fileToBase64(file), name: file.name, type: file.type };
+      if (file.size > 3 * 1024 * 1024) {
+        alert("Image trop lourde (max 3 Mo)");
+        setStatus("idle");
+        return;
       }
+      const cover = { content: await fileToBase64(file), name: file.name, type: file.type };
       const res = await fetch("/api/send-mix", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mixName, player, movie, cover }),
+        body: JSON.stringify({ mixName, player, movie, senderName, senderEmail, cover }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -86,7 +90,7 @@ export function SendMixModal({ open, onClose }: { open: boolean; onClose: () => 
     }
   }
 
-  const canSubmit = !!(mixName || player || movie);
+  const canSubmit = !!(mixName && player && movie && senderName && senderEmail && file);
 
   return (
     <Dialog.Root open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
@@ -169,6 +173,7 @@ export function SendMixModal({ open, onClose }: { open: boolean; onClose: () => 
                   onChange={(e) => setMixName(e.target.value)}
                   placeholder="Ex: Ace Venthuram"
                   style={fieldStyle}
+                  required
                 />
               </div>
               <div>
@@ -178,6 +183,7 @@ export function SendMixModal({ open, onClose }: { open: boolean; onClose: () => 
                   onChange={(e) => setPlayer(e.target.value)}
                   placeholder="Ex: Lilian Thuram"
                   style={fieldStyle}
+                  required
                 />
               </div>
               <div>
@@ -187,6 +193,28 @@ export function SendMixModal({ open, onClose }: { open: boolean; onClose: () => 
                   onChange={(e) => setMovie(e.target.value)}
                   placeholder="Ex: Ace Ventura"
                   style={fieldStyle}
+                  required
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Your Name</label>
+                <input
+                  value={senderName}
+                  onChange={(e) => setSenderName(e.target.value)}
+                  placeholder="Ex: Jean Dupont"
+                  style={fieldStyle}
+                  required
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Your Email</label>
+                <input
+                  type="email"
+                  value={senderEmail}
+                  onChange={(e) => setSenderEmail(e.target.value)}
+                  placeholder="Ex: jean.dupont@email.com"
+                  style={fieldStyle}
+                  required
                 />
               </div>
               <div>
