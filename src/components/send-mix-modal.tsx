@@ -128,7 +128,7 @@ export function SendMixModal({ open, onClose }: { open: boolean; onClose: () => 
                 margin: 0,
               }}
             >
-              SEND A MIX
+              PROPOSE A MIX
             </Dialog.Title>
             <Dialog.Close asChild>
               <button
@@ -167,6 +167,27 @@ export function SendMixModal({ open, onClose }: { open: boolean; onClose: () => 
           ) : (
             <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div>
+                <label style={labelStyle}>Your Name</label>
+                <input
+                  value={senderName}
+                  onChange={(e) => setSenderName(e.target.value)}
+                  placeholder="Ex: Jean Dupont"
+                  style={fieldStyle}
+                  required
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Your Email</label>
+                <input
+                  type="email"
+                  value={senderEmail}
+                  onChange={(e) => setSenderEmail(e.target.value)}
+                  placeholder="Ex: jean.dupont@email.com"
+                  style={fieldStyle}
+                  required
+                />
+              </div>
+              <div>
                 <label style={labelStyle}>Mix Name</label>
                 <input
                   value={mixName}
@@ -192,27 +213,6 @@ export function SendMixModal({ open, onClose }: { open: boolean; onClose: () => 
                   value={movie}
                   onChange={(e) => setMovie(e.target.value)}
                   placeholder="Ex: Ace Ventura"
-                  style={fieldStyle}
-                  required
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>Your Name</label>
-                <input
-                  value={senderName}
-                  onChange={(e) => setSenderName(e.target.value)}
-                  placeholder="Ex: Jean Dupont"
-                  style={fieldStyle}
-                  required
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>Your Email</label>
-                <input
-                  type="email"
-                  value={senderEmail}
-                  onChange={(e) => setSenderEmail(e.target.value)}
-                  placeholder="Ex: jean.dupont@email.com"
                   style={fieldStyle}
                   required
                 />
