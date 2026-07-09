@@ -23,7 +23,19 @@ const SearchIcon = () => (
 export function SiteHeader() {
   const [searchParams, setSearchParams] = useSearchParams();
   const q = searchParams.get("q") ?? "";
-  const [sendOpen, setSendOpen] = useState(false);
+  const [sendOpen, setSendOpen] = useState(() => searchParams.has("propose"));
+
+  function closeSendModal() {
+    setSendOpen(false);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("propose");
+        return next;
+      },
+      { replace: true }
+    );
+  }
 
   function handleSearch(value: string) {
     setSearchParams(
@@ -121,7 +133,7 @@ export function SiteHeader() {
         </button>
       </div>
 
-      <SendMixModal open={sendOpen} onClose={() => setSendOpen(false)} />
+      <SendMixModal open={sendOpen} onClose={closeSendModal} />
     </header>
   );
 }
