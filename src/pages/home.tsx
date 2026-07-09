@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getMixes, updateMix } from "@/lib/mixes";
+import { getMixes } from "@/lib/mixes";
 import type { Mix } from "@/lib/types";
-import { Pencil } from "lucide-react";
 
 const INITIAL_COUNT = 60;
 const LOAD_MORE_COUNT = 60;
@@ -189,12 +188,10 @@ export default function HomePage() {
   const [sel, setSel] = useState<SelState>({
     p: new Set(), m: new Set(), mix: new Set(), mont: new Set(),
   });
-  const [missingOnly, setMissingOnly] = useState(false);
   const [openFacet, setOpenFacet] = useState<string | null>(null);
   const [sortOpen, setSortOpen] = useState(false);
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: "ds", dir: "desc" });
   const [visibleCount, setVisibleCount] = useState(INITIAL_COUNT);
-  const [editMode, setEditMode] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -215,10 +212,6 @@ export default function HomePage() {
     return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, []);
 
-  function patchMix(id: string, fields: Partial<Pick<Mix, "player" | "movie" | "mix_name">>) {
-    setAllMixes((prev) => prev.map((m) => (m.id === id ? { ...m, ...fields } : m)));
-  }
-
   const { opts, optCounts, movieYears } = useMemo(() => {
     const counts: Record<string, Record<string, number>> = { p: {}, m: {}, mix: {}, mont: {} };
     const years: Record<string, number> = {};
@@ -236,11 +229,6 @@ export default function HomePage() {
     return { opts: sorted, optCounts: counts, movieYears: years };
   }, [allMixes]);
 
-  const missingCount = useMemo(
-    () => allMixes.filter((m) => !m.mix_name || !m.player || !m.movie || !m.autor_mix || !m.autor_montage).length,
-    [allMixes]
-  );
-
   const filteredMixes = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     let result = allMixes.filter((mix) => {
@@ -248,7 +236,6 @@ export default function HomePage() {
       if (sel.m.size    > 0 && !sel.m.has(mix.movie ?? ""))          return false;
       if (sel.mix.size  > 0 && !sel.mix.has(mix.autor_mix ?? ""))    return false;
       if (sel.mont.size > 0 && !sel.mont.has(mix.autor_montage ?? "")) return false;
-      if (missingOnly && mix.mix_name && mix.player && mix.movie && mix.autor_mix && mix.autor_montage) return false;
       if (q) {
         const hay = [mix.player, mix.movie, mix.autor_mix, mix.autor_montage]
           .filter(Boolean).join(" ").toLowerCase();
@@ -270,7 +257,7 @@ export default function HomePage() {
     });
 
     return result;
-  }, [allMixes, sel, searchQuery, sort, missingOnly]);
+  }, [allMixes, sel, searchQuery, sort]);
 
   const filteredIds = useMemo(() => filteredMixes.map((m) => m.id), [filteredMixes]);
 
@@ -283,7 +270,7 @@ export default function HomePage() {
   }, [allMixes]);
   const visibleMixes = filteredMixes.slice(0, visibleCount);
   const hasMore = visibleCount < filteredMixes.length;
-  const anyActive = FACETS.some((f) => sel[f.id].size > 0) || !!searchQuery.trim() || missingOnly;
+  const anyActive = FACETS.some((f) => sel[f.id].size > 0) || !!searchQuery.trim();
 
   useEffect(() => {
     if (!hasMore) return;
@@ -310,7 +297,6 @@ export default function HomePage() {
 
   function clearAll() {
     setSel({ p: new Set(), m: new Set(), mix: new Set(), mont: new Set() });
-    setMissingOnly(false);
     setSearchParams({}, { replace: true });
     setVisibleCount(INITIAL_COUNT);
   }
@@ -350,26 +336,9 @@ export default function HomePage() {
               labelFor={f.id === "m" ? (v) => (movieYears[v] ? `${v} (${movieYears[v]})` : v) : undefined}
             />
           ))}
-          <button
-            className={`mix-facet${missingOnly ? " active" : ""}`}
-            onClick={() => { setOpenFacet(null); setSortOpen(false); setMissingOnly((v) => !v); setVisibleCount(INITIAL_COUNT); }}
-          >
-            Missing infos
-            {missingCount > 0 && (
-              <span style={{
-                minWidth: 17, height: 17, padding: "0 4px", borderRadius: 9,
-                background: missingOnly ? "#e0573f" : "rgba(224,87,63,.25)",
-                color: missingOnly ? "#15110f" : "#e0573f",
-                fontSize: 10, fontWeight: 600,
-                display: "inline-flex", alignItems: "center", justifyContent: "center",
-              }}>
-                {missingCount}
-              </span>
-            )}
-          </button>
         </div>
 
-        {/* Sort + Edit — right */}
+        {/* Sort — right */}
         <div className="flex items-center gap-2 shrink-0">
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "#9f988a", letterSpacing: ".04em", whiteSpace: "nowrap" }}>Order by :</span>
           <SortMenu
@@ -378,21 +347,11 @@ export default function HomePage() {
             open={sortOpen}
             onOpen={() => { setOpenFacet(null); setSortOpen((o) => !o); }}
           />
-          {!loading && (
-            <button
-              onClick={() => setEditMode((v) => !v)}
-              className={`mix-facet${editMode ? " active" : ""}`}
-              aria-label="Toggle edit mode"
-            >
-              <Pencil size={11} />
-              Edit
-            </button>
-          )}
         </div>
       </div>
 
       {/* Active chips */}
-      {(chips.length > 0 || missingOnly) && (
+      {chips.length > 0 && (
         <div
           className="flex items-center justify-center flex-wrap"
           style={{ gap: 7, padding: "4px clamp(20px,4vw,56px) 0" }}
@@ -409,18 +368,6 @@ export default function HomePage() {
               </button>
             </span>
           ))}
-          {missingOnly && (
-            <span className="mix-chip">
-              <span style={{ color: "#9f988a" }}>Filter:</span> Missing infos
-              <button
-                className="mix-chip-remove"
-                onClick={() => setMissingOnly(false)}
-                aria-label="Remove missing infos filter"
-              >
-                ×
-              </button>
-            </span>
-          )}
           <button
             onClick={clearAll}
             style={{
@@ -483,8 +430,6 @@ export default function HomePage() {
               mix={mix}
               index={i}
               rank={rankMap.get(mix.id) ?? 0}
-              editMode={editMode}
-              onPatch={patchMix}
               filteredIds={filteredIds}
             />
           ))}
@@ -499,13 +444,11 @@ export default function HomePage() {
 // ─── MixCard ─────────────────────────────────────────────────────────────────
 
 function MixCard({
-  mix, index, rank, editMode, onPatch, filteredIds,
+  mix, index, rank, filteredIds,
 }: {
   mix: Mix;
   index: number;
   rank: number;
-  editMode: boolean;
-  onPatch: (id: string, fields: Partial<Pick<Mix, "player" | "movie" | "mix_name">>) => void;
   filteredIds: string[];
 }) {
   const thumbnail = mix.image ?? mix.fb_image;
@@ -514,44 +457,6 @@ function MixCard({
   const title = mix.mix_name ?? [mix.player, mix.movie].filter(Boolean).join(" × ");
   const location = useLocation();
   const cardNum = `#${String(rank).padStart(3, "0")}`;
-
-  if (editMode) {
-    return (
-      <div className="relative aspect-[2/3] overflow-hidden rounded-[11px]" style={{ background: tintBg }}>
-        <div className="mix-sheen" />
-        <div className="mix-grain" />
-        {thumbnail && (
-          <img
-            src={thumbnail}
-            alt=""
-            loading="lazy"
-            className="absolute inset-0 w-full h-full object-cover opacity-50"
-          />
-        )}
-        <div className="absolute inset-0 bg-black/50" />
-        <div className="absolute inset-0 flex flex-col justify-end p-2 gap-1.5">
-          <EditField
-            label="Mix Name"
-            value={mix.mix_name ?? ""}
-            onSave={(v) => onPatch(mix.id, { mix_name: v || null })}
-            saveToDb={(v) => updateMix(mix.id, { mix_name: v || null })}
-          />
-          <EditField
-            label="Player"
-            value={mix.player ?? ""}
-            onSave={(v) => onPatch(mix.id, { player: v || null })}
-            saveToDb={(v) => updateMix(mix.id, { player: v || null })}
-          />
-          <EditField
-            label="Movie"
-            value={mix.movie ?? ""}
-            onSave={(v) => onPatch(mix.id, { movie: v || null })}
-            saveToDb={(v) => updateMix(mix.id, { movie: v || null })}
-          />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <Link
@@ -619,51 +524,5 @@ function MixCard({
         {cardNum}
       </span>
     </Link>
-  );
-}
-
-// ─── EditField ────────────────────────────────────────────────────────────────
-
-function EditField({
-  label, value, onSave, saveToDb,
-}: {
-  label: string;
-  value: string;
-  onSave: (v: string) => void;
-  saveToDb: (v: string) => Promise<void>;
-}) {
-  const [draft, setDraft] = useState(value);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => { setDraft(value); }, [value]);
-
-  async function commit() {
-    if (draft === value) return;
-    onSave(draft);
-    setSaving(true);
-    try { await saveToDb(draft); } finally { setSaving(false); }
-  }
-
-  return (
-    <div className="relative">
-      <span className="absolute left-1.5 top-0.5 pointer-events-none" style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "rgba(255,255,255,.4)", textTransform: "uppercase", letterSpacing: ".05em", lineHeight: 1 }}>
-        {label}
-      </span>
-      <input
-        type="text"
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
-        placeholder={label}
-        className="w-full outline-none transition-colors"
-        style={{
-          paddingTop: "14px", paddingBottom: "4px", paddingLeft: "6px", paddingRight: "6px",
-          fontFamily: "var(--font-mono)", fontSize: 11, color: "#f4efe6",
-          background: "rgba(0,0,0,.6)",
-          border: `1px solid ${saving ? "rgba(224,87,63,.6)" : "rgba(255,255,255,.2)"}`,
-        }}
-      />
-    </div>
   );
 }
